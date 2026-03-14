@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()  # 加载.env文件中的API密钥
 SCENE_FILE = "work_scenes.json"
 DMXAPI_KEY = os.getenv('DMX_API_KEY')  # API密钥
-DMXAPI_URL = "https://www.dmxapi.cn/v1/chat/completions"  # API端点
+DMXAPI_URL = os.getenv('URL')  # API端点
 
 # ========== 工具函数 ==========
 def load_scenes():
