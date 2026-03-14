@@ -14,18 +14,18 @@ Windows
 ### 一、下载项目
 ```bash
 git clone https://github.com/sheerheart3-sketch/Smart-Scene-Agent
-
+```
 ### 二、安装依赖
 ```bash
 pip install -r requirements.txt
-
+```
 ### 三、配置 API 密钥及接口
 1、在项目根目录创建.env文件
 2、添加以下内容：
 ```
 API_KEY=你的API密钥
 URL=API接口
-
+```
 ### 四、可选功能：自动在user文件夹下搜索软件，需要在.env文件中加入
 USERNAME=你的用户名
 添加后，可以在C:\\Users\\{os.getenv('USERNAME')}\\AppData\\Local\\Programs\\文件夹下搜索所需软件
@@ -33,7 +33,7 @@ USERNAME=你的用户名
 ### 五、启动GUI界面
 ```bash
 python agent_gui.py
-
+```
 ### 六、操作说明
 创建场景时，需要告知agent，场景的名字和需要打开的软件、网址。
 网址不需要以http开头。
