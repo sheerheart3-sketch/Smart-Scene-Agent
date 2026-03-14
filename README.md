@@ -12,17 +12,17 @@ Windows
 网络连接（用于调用 LLM API）
 
 ### 一、下载项目
-'''bash
+```bash
 git clone https://github.com/sheerheart3-sketch/Smart-Scene-Agent
 
 ### 二、安装依赖
-'''bash
+```bash
 pip install -r requirements.txt
 
 ### 三、配置 API 密钥及接口
 1、在项目根目录创建.env文件
 2、添加以下内容：
-'''
+```
 API_KEY=你的API密钥
 URL=API接口
 
@@ -31,7 +31,7 @@ USERNAME=你的用户名
 添加后，可以在C:\\Users\\{os.getenv('USERNAME')}\\AppData\\Local\\Programs\\文件夹下搜索所需软件
 
 ### 五、启动GUI界面
-'''bash
+```bash
 python agent_gui.py
 
 ### 六、操作说明
