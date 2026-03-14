@@ -6,30 +6,31 @@ A lightweight desktop AI agent based on LLM, supporting intent recognition and o
 🎨 可视化界面：简洁美观的 TKinter GUI 界面，操作直观
 🌐 多类型支持：支持打开网页、本地软件、文件路径等多种目标
 
-环境要求
+##环境要求
 Python 3.7+
 Windows
 网络连接（用于调用 LLM API）
 
-一、下载项目
+###一、下载项目
 git clone https://github.com/sheerheart3-sketch/Smart-Scene-Agent
 
-二、安装依赖
+###二、安装依赖
 pip install -r requirements.txt
 
-三、配置 API 密钥及接口
+###三、配置 API 密钥及接口
 1、在项目根目录创建.env文件
 2、添加以下内容：
 API_KEY=你的API密钥
 URL=API接口
-四、可选功能：自动在user文件夹下搜索软件，需要在.env文件中加入
+
+###四、可选功能：自动在user文件夹下搜索软件，需要在.env文件中加入
 USERNAME=你的用户名
 添加后，可以在C:\\Users\\{os.getenv('USERNAME')}\\AppData\\Local\\Programs\\文件夹下搜索所需软件
 
-五、启动GUI界面
+###五、启动GUI界面
 python agent_gui.py
 
-六、操作说明
+###六、操作说明
 创建场景时，需要告知agent，场景的名字和需要打开的软件、网址。
 网址不需要以http开头。
 软件可以是文件绝对路径，如果软件的快捷方式存放在桌面上，或者软件的.exe文件存放在以下三种文件夹下时，可以直接输入软件名，自动查找
@@ -39,7 +40,7 @@ C:\Users\<用户名>\AppData\Local\Programs\<软件名>\<软件名>.exe
 告诉agent想要做某件事时，agent会联想场景库中合适的场景，打开对应的场景
 如：我想玩游戏------联想到steam场景------自动打开steam游戏启动器
 
-七常见问题
+###七常见问题
 Q1: API 调用失败 / 返回 HTML 页面
 检查.env文件中的 API 密钥是否正确
 确认网络连接正常，可访问 DMXAPI 服务
