@@ -11,7 +11,6 @@ load_dotenv()  # 加载.env文件中的API密钥
 SCENE_FILE = "work_scenes.json"
 DMXAPI_KEY = os.getenv('API_KEY')  # API密钥
 DMXAPI_URL = os.getenv('URL')  # API端点
-
 # ========== 工具函数 ==========
 def load_scenes():
     """加载已保存的工作场景"""
@@ -244,6 +243,7 @@ def llm_understand(user_input):
         return "LIST"
     
     # 加载已保存的场景库
+    model=os.getenv('MODELNAME')
     scenes = load_scenes()
     scene_list = list(scenes.keys())
     
@@ -295,7 +295,7 @@ def llm_understand(user_input):
     
     # 调用LLM进行智能匹配
     try:
-        result_text = reason("Qwen/Qwen2.5-Coder-7B-Instruct", [
+        result_text = reason(model, [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_input}
         ]).strip()
