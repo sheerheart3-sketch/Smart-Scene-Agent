@@ -1,9 +1,14 @@
 # Smart-Scene-Agent
 A lightweight desktop AI agent based on LLM, supporting intent recognition and one-click launching of apps, websites, and daily work scenes.基于大模型的轻量级桌面 AI 助手，支持意图识别，一键启动软件、网站与日常工作场景。
+
 🧠 智能语义理解：基于 LLM 理解自然语言指令，无需记忆复杂命令
+
 📋 场景管理：创建 / 删除 / 编辑 / 查看自定义工作场景
+
 🚀 一键启动：双击场景即可自动依次打开所有关联的软件 / 网页 / 文件
+
 🎨 可视化界面：简洁美观的 TKinter GUI 界面，操作直观
+
 🌐 多类型支持：支持打开网页、本地软件、文件路径等多种目标
 
 ## 环境要求
