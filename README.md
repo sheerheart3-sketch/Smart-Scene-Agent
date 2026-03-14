@@ -30,9 +30,12 @@ pip install -r requirements.txt
 ```
 API_KEY=你的API密钥
 URL=API接口
+MODELNAME=模型名称
 ```
 ### 四、可选功能：自动在user文件夹下搜索软件，需要在.env文件中加入
+```
 USERNAME=你的用户名
+```
 添加后，可以在C:\\Users\\{os.getenv('USERNAME')}\\AppData\\Local\\Programs\\文件夹下搜索所需软件
 
 ### 五、启动GUI界面
