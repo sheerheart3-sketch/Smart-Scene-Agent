@@ -44,9 +44,9 @@ python agent_gui.py
 - 网址不需要以http开头。
 - 软件可以是文件绝对路径，如果软件的快捷方式存放在桌面上，或者软件的.exe文件存放在以下三种文件夹下时，可以直接输入软件名，自动查找
 ```
-- C:\Program Files\<软件名>\<软件名>.exe
-- C:\Program Files (x86)\<软件名>\<软件名>.exe
-- C:\Users\<用户名>\AppData\Local\Programs\<软件名>\<软件名>.exe
+C:\Program Files\<软件名>\<软件名>.exe
+C:\Program Files (x86)\<软件名>\<软件名>.exe
+C:\Users\<用户名>\AppData\Local\Programs\<软件名>\<软件名>.exe
 ```
 - 告诉agent想要做某件事时，agent会联想场景库中合适的场景，打开对应的场景
 - 如：我想玩游戏------联想到steam场景------自动打开steam游戏启动器
