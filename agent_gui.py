@@ -7,7 +7,15 @@ import os
 # 导入Agent模块
 from agent import (
     load_scenes, save_scene, delete_scene, update_scene,
-    llm_understand, start_scene, open_target
+    add_item_to_scene, remove_item_from_scene, replace_item_in_scene,
+    llm_understand, start_scene, open_target, reason
+)
+
+# 导入记忆管理模块
+from memory_manager import (
+    get_memory_summary, get_memory_stats, clear_memory,
+    get_scene_recommendation, get_detailed_recommendation,
+    get_7day_raw_memory, get_recently_opened
 )
 
 class AgentGUI:
@@ -209,7 +217,81 @@ class AgentGUI:
             relief=tk.FLAT,
             cursor="hand2"
         )
-        edit_btn.pack(fill=tk.X)
+        edit_btn.pack(fill=tk.X, pady=(0, 10))
+        
+        # 【新增】记忆管理分割线
+        memory_divider = tk.Frame(right_frame, bg="#bdc3c7", height=1)
+        memory_divider.pack(fill=tk.X, pady=(0, 10))
+        
+        # 【新增】记忆管理标签
+        memory_label = tk.Label(
+            right_frame,
+            text="🧠 记忆管理",
+            font=("微软雅黑", 10, "bold"),
+            bg="#f0f0f0",
+            fg="#2c3e50"
+        )
+        memory_label.pack(anchor=tk.W, pady=(0, 5))
+        
+        # 【新增】记忆操作按钮框
+        memory_frame = tk.Frame(right_frame, bg="#f0f0f0")
+        memory_frame.pack(fill=tk.X)
+        
+        # 查看记忆按钮
+        view_memory_btn = tk.Button(
+            memory_frame,
+            text="📚 查看记忆",
+            font=("微软雅黑", 9),
+            bg="#3498db",
+            fg="white",
+            height=1,
+            command=self.show_memory_dialog,
+            relief=tk.FLAT,
+            cursor="hand2"
+        )
+        view_memory_btn.pack(fill=tk.X, pady=(0, 5))
+        
+        # 记忆统计按钮
+        stats_memory_btn = tk.Button(
+            memory_frame,
+            text="📊 记忆统计",
+            font=("微软雅黑", 9),
+            bg="#9b59b6",
+            fg="white",
+            height=1,
+            command=self.show_memory_stats,
+            relief=tk.FLAT,
+            cursor="hand2"
+        )
+        stats_memory_btn.pack(fill=tk.X, pady=(0, 5))
+        
+        # 清空记忆按钮
+        clear_memory_btn = tk.Button(
+            memory_frame,
+            text="🗑️ 清空记忆",
+            font=("微软雅黑", 9),
+            bg="#e67e22",
+            fg="white",
+            height=1,
+            command=self.clear_memory_dialog,
+            relief=tk.FLAT,
+            cursor="hand2"
+        )
+        clear_memory_btn.pack(fill=tk.X, pady=(0, 5))
+        
+        # 【新增】推荐场景按钮
+        recommend_btn = tk.Button(
+            memory_frame,
+            text="💡 推荐场景",
+            font=("微软雅黑", 9),
+            bg="#1abc9c",
+            fg="white",
+            height=1,
+            command=self.show_recommendation_dialog,
+            relief=tk.FLAT,
+            cursor="hand2"
+        )
+        recommend_btn.pack(fill=tk.X)
         
         # 初始化场景列表
         self.refresh_scenes()
@@ -248,6 +330,72 @@ class AgentGUI:
     def _process_message(self, user_input):
         """后台处理用户消息"""
         try:
+            # 【新增】处理特殊指令：查看记忆
+            if "查看记忆" in user_input or "显示记忆" in user_input or "操作记录" in user_input:
+                memory_summary = get_memory_summary()
+                self.add_dialog_message("agent", memory_summary)
+                return
+            
+            # 【新增】处理特殊指令：记忆统计
+            if "记忆统计" in user_input or "显示记忆数据" in user_input or "统计数据" in user_input:
+                stats = get_memory_stats()
+                if stats.get('total_items', 0) == 0:
+                    result = "📊 暂无记忆数据"
+                else:
+                    result = f"📊 记忆统计：\n"
+                    result += f"  • 总记忆条数：{stats['total_items']}\n"
+                    result += f"  • 涉及场景数：{stats['unique_scenes']}\n"
+                    result += f"  • 操作类型分布：\n"
+                    for op, count in stats.get('operations', {}).items():
+                        result += f"    - {op}：{count}次\n"
+                self.add_dialog_message("agent", result)
+                return
+            
+            # 【新增】处理特殊指令：场景推荐
+            if "建议我做什么" in user_input or "有什么建议" in user_input or "推荐" in user_input or "建议我" in user_input:
+                if "详细" in user_input or "全部" in user_input or "所有" in user_input:
+                    prompt, memories, recently_opened = get_detailed_recommendation()
+                else:
+                    prompt, memories, recently_opened = get_scene_recommendation()
+                
+                if not memories:
+                    self.add_dialog_message("agent", prompt)
+                    return
+                
+                # 显示分析中的提示
+                self.add_dialog_message("system", "🔄 AI正在分析您的工作习惯...")
+                
+                # 异步调用LLM
+                def get_async_recommendation():
+                    try:
+                        model = os.getenv('MODELNAME')
+                        recommendation = reason(model, [
+                            {"role": "system", "content": "你是一个高效的工作建议助手。根据用户的工作记录，简洁地给出最优的一个场景建议，不要冗长。"},
+                            {"role": "user", "content": prompt}
+                        ]).strip()
+                        
+                        if recommendation:
+                            self.add_dialog_message("agent", recommendation)
+                        else:
+                            self.add_dialog_message("agent", prompt)
+                    except Exception as e:
+                        self.add_dialog_message("agent", f"⚠️  生成建议失败：{str(e)}", "error")
+                
+                thread = threading.Thread(target=get_async_recommendation, daemon=True)
+                thread.start()
+                return
+            
+            # 【新增】处理特殊指令：清空记忆
+            if "清空记忆" in user_input or "重置记忆" in user_input:
+                if messagebox.askyesno("清空记忆", "确定要清空所有记忆吗？"):
+                    if clear_memory():
+                        self.add_dialog_message("agent", "✅ 所有记忆已清空，Agent开始新的学习过程")
+                    else:
+                        self.add_dialog_message("agent", "❌ 清空记忆失败", "error")
+                else:
+                    self.add_dialog_message("agent", "取消了清空记忆操作")
+                return
+            
             # 让LLM理解用户指令
             llm_result = llm_understand(user_input)
             
@@ -299,6 +447,37 @@ class AgentGUI:
                     targets_str = parts[2].strip()
                     targets = [t.strip() for t in targets_str.split(",") if t.strip()]
                     result = update_scene(scene_name, targets)
+                    self.refresh_scenes()
+                self.add_dialog_message("agent", result)
+            elif llm_result.startswith("ADD|"):
+                parts = llm_result.split("|")
+                if len(parts) < 3:
+                    result = "❌ 添加项信息不完整"
+                else:
+                    scene_name = parts[1].strip()
+                    item_str = parts[2].strip()
+                    self.display_result(add_item_to_scene(scene_name, item_str))
+                    self.refresh_scenes()
+                self.add_dialog_message("agent", result)
+            elif llm_result.startswith("REMOVE|"):
+                parts = llm_result.split("|")
+                if len(parts) < 3:
+                    result = "❌ 删除项信息不完整"
+                else:
+                    scene_name = parts[1].strip()
+                    item_str = parts[2].strip()
+                    self.display_result(remove_item_from_scene(scene_name, item_str))
+                    self.refresh_scenes()
+                self.add_dialog_message("agent", result)
+            elif llm_result.startswith("REPLACE|"):
+                parts = llm_result.split("|")
+                if len(parts) < 4:
+                    result = "❌ 替换项信息不完整"
+                else:
+                    scene_name = parts[1].strip()
+                    old_item = parts[2].strip()
+                    new_item = parts[3].strip()
+                    self.display_result(replace_item_in_scene(scene_name, old_item, new_item))
                     self.refresh_scenes()
                 self.add_dialog_message("agent", result)
             elif llm_result == "LIST":
@@ -443,6 +622,284 @@ class AgentGUI:
         save_btn.grid(row=1, column=1, sticky=tk.E, padx=10, pady=10)
         
         dialog.columnconfigure(1, weight=1)
+    
+    def show_memory_dialog(self):
+        """显示记忆摘要"""
+        memory_summary = get_memory_summary()
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("🧠 记忆摘要")
+        dialog.geometry("400x350")
+        
+        # 标题
+        title_label = tk.Label(
+            dialog,
+            text="记忆摘要",
+            font=("微软雅黑", 12, "bold"),
+            fg="#2c3e50"
+        )
+        title_label.pack(padx=10, pady=10)
+        
+        # 记忆摘要文本框
+        text_frame = tk.Frame(dialog, bg="white", relief=tk.SUNKEN, bd=1)
+        text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        
+        text_widget = scrolledtext.ScrolledText(
+            text_frame,
+            font=("微软雅黑", 10),
+            bg="white",
+            fg="#2c3e50",
+            state=tk.DISABLED,
+            wrap=tk.WORD
+        )
+        text_widget.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # 设置文本内容
+        text_widget.config(state=tk.NORMAL)
+        text_widget.insert("1.0", memory_summary)
+        text_widget.config(state=tk.DISABLED)
+        
+        # 关闭按钮
+        close_btn = tk.Button(
+            dialog,
+            text="关闭",
+            font=("微软雅黑", 10),
+            bg="#95a5a6",
+            fg="white",
+            command=dialog.destroy
+        )
+        close_btn.pack(padx=10, pady=10)
+    
+    def show_memory_stats(self):
+        """显示记忆统计信息"""
+        stats = get_memory_stats()
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("📊 记忆统计")
+        dialog.geometry("400x300")
+        
+        # 标题
+        title_label = tk.Label(
+            dialog,
+            text="记忆统计数据",
+            font=("微软雅黑", 12, "bold"),
+            fg="#2c3e50"
+        )
+        title_label.pack(padx=10, pady=10)
+        
+        # 统计信息
+        stats_text = "📊 记忆统计：\n\n"
+        
+        if stats.get('total_items', 0) == 0:
+            stats_text += "暂无记忆数据"
+        else:
+            stats_text += f"总记忆条数: {stats['total_items']}\n"
+            stats_text += f"涉及场景数: {stats['unique_scenes']}\n"
+            stats_text += f"操作类型分布:\n"
+            
+            ops = stats.get('operations', {})
+            for op, count in ops.items():
+                stats_text += f"  • {op}: {count}次\n"
+        
+        # 显示统计信息
+        info_label = tk.Label(
+            dialog,
+            text=stats_text,
+            font=("微软雅黑", 10),
+            justify=tk.LEFT,
+            bg="#ecf0f1",
+            fg="#2c3e50",
+            relief=tk.SUNKEN,
+            padx=15,
+            pady=15
+        )
+        info_label.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        
+        # 关闭按钮
+        close_btn = tk.Button(
+            dialog,
+            text="关闭",
+            font=("微软雅黑", 10),
+            bg="#95a5a6",
+            fg="white",
+            command=dialog.destroy
+        )
+        close_btn.pack(padx=10, pady=10)
+    
+    def clear_memory_dialog(self):
+        """清空记忆确认对话框"""
+        if messagebox.askyesno("清空记忆", "确定要清空所有记忆吗？\n\n这将重置Agent的学习上下文。"):
+            if clear_memory():
+                messagebox.showinfo("成功", "✅ 所有记忆已清空！\nAgent开始新的学习过程")
+                self.add_dialog_message("system", "🧠 所有记忆已清空，Agent开始新的学习过程")
+            else:
+                messagebox.showerror("失败", "❌ 清空记忆失败，请检查权限")
+        else:
+            messagebox.showinfo("已取消", "取消了清空记忆操作")
+    
+    def show_recommendation_dialog(self):
+        """显示场景推荐"""
+        prompt, memories, recently_opened = get_scene_recommendation()
+        
+        # 如果没有数据，显示提示
+        if not memories:
+            dialog = tk.Toplevel(self.root)
+            dialog.title("💡 场景推荐")
+            dialog.geometry("450x250")
+            
+            title_label = tk.Label(
+                dialog,
+                text="暂无推荐",
+                font=("微软雅黑", 12, "bold"),
+                fg="#2c3e50"
+            )
+            title_label.pack(padx=10, pady=10)
+            
+            text_frame = tk.Frame(dialog, bg="white", relief=tk.SUNKEN, bd=1)
+            text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+            
+            text_widget = scrolledtext.ScrolledText(text_frame, font=("微软雅黑", 10), state=tk.DISABLED, wrap=tk.WORD)
+            text_widget.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            text_widget.config(state=tk.NORMAL)
+            text_widget.insert("1.0", prompt)
+            text_widget.config(state=tk.DISABLED)
+            
+            close_btn = tk.Button(dialog, text="关闭", font=("微软雅黑", 10), command=dialog.destroy)
+            close_btn.pack(padx=10, pady=10)
+            return
+        
+        # 使用LLM进行分析
+        dialog = tk.Toplevel(self.root)
+        dialog.title("💡 场景推荐 - 分析中...")
+        dialog.geometry("450x350")
+        
+        loading_label = tk.Label(dialog, text="🔄 AI正在分析您的工作习惯...", font=("微软雅黑", 11), fg="#27ae60")
+        loading_label.pack(padx=10, pady=20)
+        
+        def get_recommendation_async():
+            try:
+                model = os.getenv('MODELNAME')
+                recommendation = reason(model, [
+                    {"role": "system", "content": "你是一个高效的工作建议助手。根据用户的工作记录，简洁地给出最优的一个场景建议，不要冠长。"},
+                    {"role": "user", "content": prompt}
+                ]).strip()
+                
+                # 更新UI
+                loading_label.config(text="💡 基于您的工作习惯的推荐：", fg="#2c3e50")
+                dialog.title("💡 场景推荐")
+                
+                # 清空加载标签后面的内容
+                for widget in dialog.winfo_children():
+                    if widget != loading_label and not isinstance(widget, tk.Frame):
+                        widget.pack_forget()
+                
+                text_frame = tk.Frame(dialog, bg="white", relief=tk.SUNKEN, bd=1)
+                text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+                
+                text_widget = scrolledtext.ScrolledText(text_frame, font=("微软雅黑", 10), bg="white", fg="#2c3e50", state=tk.DISABLED, wrap=tk.WORD)
+                text_widget.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+                
+                text_widget.config(state=tk.NORMAL)
+                text_widget.insert("1.0", recommendation)
+                text_widget.config(state=tk.DISABLED)
+                
+                btn_frame = tk.Frame(dialog)
+                btn_frame.pack(fill=tk.X, padx=10, pady=10)
+                
+                detail_btn = tk.Button(
+                    btn_frame,
+                    text="📊 详细建议",
+                    font=("微软雅黑", 10),
+                    bg="#9b59b6",
+                    fg="white",
+                    command=lambda: self._show_detailed_recommendation(dialog)
+                )
+                detail_btn.pack(side=tk.LEFT, padx=(0, 5))
+                
+                close_btn = tk.Button(
+                    btn_frame,
+                    text="关闭",
+                    font=("微软雅黑", 10),
+                    bg="#95a5a6",
+                    fg="white",
+                    command=dialog.destroy
+                )
+                close_btn.pack(side=tk.LEFT)
+            except Exception as e:
+                loading_label.config(text=f"⚠️  生成建议失败：{str(e)}", fg="#e74c3c")
+        
+        # 异步获取推荐
+        thread = threading.Thread(target=get_recommendation_async, daemon=True)
+        thread.start()
+    
+    def _show_detailed_recommendation(self, parent_dialog):
+        """显示详细建议"""
+        prompt, memories, recently_opened = get_detailed_recommendation()
+        
+        # 关闭之前的对话框
+        parent_dialog.destroy()
+        
+        # 创建新对话框
+        dialog = tk.Toplevel(self.root)
+        dialog.title("📊 详细建议 - 分析中...")
+        dialog.geometry("550x500")
+        
+        # 标题
+        loading_label = tk.Label(
+            dialog,
+            text="🔄 AI正在进行全面分析...",
+            font=("微软雅黑", 12, "bold"),
+            fg="#27ae60"
+        )
+        loading_label.pack(padx=10, pady=20)
+        
+        def get_detailed_async():
+            try:
+                model = os.getenv('MODELNAME')
+                detailed_analysis = reason(model, [
+                    {"role": "system", "content": "你是一个高效的工作建议助手。根据用户的工作记录，简洁地给出最优的一个场景建议，不要冠长。"},
+                    {"role": "user", "content": prompt}
+                ]).strip()
+                
+                # 更新标题和标签
+                dialog.title("📊 详细分析 - 全天24小时习惯分析")
+                loading_label.config(text="📊 您的工作习惯深度分析：", fg="#2c3e50")
+                
+                # 创建文本框
+                text_frame = tk.Frame(dialog, bg="white", relief=tk.SUNKEN, bd=1)
+                text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+                
+                text_widget = scrolledtext.ScrolledText(
+                    text_frame,
+                    font=("微软雅黑", 9),
+                    bg="white",
+                    fg="#2c3e50",
+                    state=tk.DISABLED,
+                    wrap=tk.WORD
+                )
+                text_widget.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+                
+                # 设置文本内容
+                text_widget.config(state=tk.NORMAL)
+                text_widget.insert("1.0", detailed_analysis)
+                text_widget.config(state=tk.DISABLED)
+                
+                # 关闭按钮
+                close_btn = tk.Button(
+                    dialog,
+                    text="关闭",
+                    font=("微软雅黑", 10),
+                    bg="#95a5a6",
+                    fg="white",
+                    command=dialog.destroy
+                )
+                close_btn.pack(padx=10, pady=10)
+            except Exception as e:
+                loading_label.config(text=f"⚠️  分析失败：{str(e)}", fg="#e74c3c")
+        
+        # 异步获取详细分析
+        thread = threading.Thread(target=get_detailed_async, daemon=True)
+        thread.start()
 
 if __name__ == "__main__":
     root = tk.Tk()
