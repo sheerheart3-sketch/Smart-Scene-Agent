@@ -3,7 +3,7 @@ A lightweight desktop AI agent based on LLM, supporting intent recognition and o
 
 🧠 智能语义理解：基于 LLM 理解自然语言指令，无需记忆复杂命令
 
-📋 场景管理：创建 / 删除 / 编辑 / 查看自定义工作场景
+📋 场景管理：创建 / 删除 / 编辑 / 查看自定义工作场景，当不确定该干什么的时候，LLM可以根据过去七天的记录，推荐当前的工作
 
 🚀 一键启动：双击场景即可自动依次打开所有关联的软件 / 网页 / 文件
 
